@@ -1,0 +1,19 @@
+name: tests-and-checks
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10.12
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          make install
+      - name: Run linter and tests
+        run: make check
