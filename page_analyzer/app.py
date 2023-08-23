@@ -2,7 +2,10 @@ import os
 from datetime import date
 from urllib.parse import urlparse
 
-from flask import Flask, request, render_template, redirect, url_for, flash, get_flashed_messages
+from flask import (
+    Flask, request, render_template, redirect, url_for,
+    flash, get_flashed_messages
+)
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
@@ -81,7 +84,7 @@ def show_url_id(id):
     messages = get_flashed_messages(with_categories=True)
     with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            cur.execute(f'SELECT * FROM urls WHERE id=%s', (id,))
+            cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
             url = cur.fetchone()
     return render_template('url_id.html', url=url, messages=messages)
 
