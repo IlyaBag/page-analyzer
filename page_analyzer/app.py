@@ -72,7 +72,15 @@ def show_urls():
     # получить из БД все сохранённые адреса, отсортировать
     with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            cur.execute('SELECT * FROM urls ORDER BY id DESC')
+            # cur.execute('SELECT * FROM urls ORDER BY id DESC')
+            cur.execute(
+                '''SELECT u.id, u.name, uc.created_at FROM urls AS u
+                LEFT JOIN
+                    (SELECT url_id, MAX(created_at) AS created_at
+                        FROM url_checks GROUP BY url_id) as uc
+                    ON u.id = uc.url_id
+                ORDER BY u.id DESC'''
+            )
             all_urls = cur.fetchall()
     # вывести таблицу на страницу
     return render_template('show.html', all_urls=all_urls)
@@ -86,7 +94,28 @@ def show_url_id(id):
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
             url = cur.fetchone()
-    return render_template('url_id.html', url=url, messages=messages)
+            cur.execute('SELECT * FROM url_checks WHERE url_id=%s', (id,))
+            checks = cur.fetchall()
+            print('url =', url)
+            print('url_checks =', checks)
+    return render_template('url_id.html',
+                           url=url,
+                           messages=messages,
+                           checks=checks)
+
+
+@app.post('/urls/<id>/checks')
+def check_url(id):
+    with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                '''INSERT INTO url_checks (url_id, status_code, created_at)
+                VALUES (%s, %s, %s)''',
+                (id, 000, date.today())
+            )
+            conn.commit()
+    flash('Страница успешно проверена', 'success')
+    return redirect(url_for('show_url_id', id=id))
 
 
 def validate_url(url):
