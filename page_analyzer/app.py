@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import validators
+import requests
 
 
 app = Flask(__name__)
@@ -74,10 +75,12 @@ def show_urls():
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             # cur.execute('SELECT * FROM urls ORDER BY id DESC')
             cur.execute(
-                '''SELECT u.id, u.name, uc.created_at FROM urls AS u
+                '''SELECT u.id, u.name, uc.status_code, uc.created_at
+                FROM urls AS u
                 LEFT JOIN
-                    (SELECT url_id, MAX(created_at) AS created_at
-                        FROM url_checks GROUP BY url_id) as uc
+                    (SELECT DISTINCT ON (url_id) url_id, status_code, created_at
+                        FROM url_checks
+                        ORDER BY url_id, created_at DESC) as uc
                     ON u.id = uc.url_id
                 ORDER BY u.id DESC'''
             )
@@ -96,8 +99,8 @@ def show_url_id(id):
             url = cur.fetchone()
             cur.execute('SELECT * FROM url_checks WHERE url_id=%s', (id,))
             checks = cur.fetchall()
-            print('url =', url)
-            print('url_checks =', checks)
+            # print('url =', url)
+            # print('url_checks =', checks)
     return render_template('url_id.html',
                            url=url,
                            messages=messages,
@@ -107,11 +110,16 @@ def show_url_id(id):
 @app.post('/urls/<id>/checks')
 def check_url(id):
     with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
+        with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
+            cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
+            url = cur.fetchone()
+            r = requests.get(url.name)
+            status = r.status_code
         with conn.cursor() as cur:
             cur.execute(
                 '''INSERT INTO url_checks (url_id, status_code, created_at)
                 VALUES (%s, %s, %s)''',
-                (id, 000, date.today())
+                (id, status, date.today())
             )
             conn.commit()
     flash('Страница успешно проверена', 'success')
