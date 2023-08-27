@@ -113,8 +113,13 @@ def check_url(id):
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
             url = cur.fetchone()
-            r = requests.get(url.name)
+            try:
+                r = requests.get(url.name)
+            except requests.RequestException:
+                flash('Произошла ошибка при проверке', 'danger')
+                return redirect(url_for('show_url_id', id=id))
             status = r.status_code
+
         with conn.cursor() as cur:
             cur.execute(
                 '''INSERT INTO url_checks (url_id, status_code, created_at)
