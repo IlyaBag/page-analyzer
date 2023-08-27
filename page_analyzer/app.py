@@ -114,7 +114,7 @@ def check_url(id):
             cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
             url = cur.fetchone()
             try:
-                r = requests.get(url.name)
+                r = requests.get(url.name, timeout=5)
             except requests.RequestException:
                 flash('Произошла ошибка при проверке', 'danger')
                 return redirect(url_for('show_url_id', id=id))
