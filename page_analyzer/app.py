@@ -11,6 +11,7 @@ import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import validators
 import requests
+from bs4 import BeautifulSoup
 
 
 app = Flask(__name__)
@@ -41,7 +42,6 @@ def add_url():
         with conn.cursor() as cur:
             cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s)',
                         (new_url, date.today())
-                        # (new_url, datetime.strftime(date.today(), '%y-%m-%d'))
                         )
             conn.commit()
             cur.execute(f"SELECT id FROM urls WHERE name='{new_url}'")
@@ -51,29 +51,12 @@ def add_url():
     flash('Страница успешно добавлена', 'success')
     return redirect(url_for('show_url_id', id=id))
 
-    # with psycopg2.connect(DSN) as conn:
-    # with conn.cursor() as curs:
-    #     curs.execute(SQL)
-    # ---
-    # conn = psycopg2.connect(DSN)
-
-    # with conn:
-    #     with conn.cursor() as curs:
-    #         curs.execute(SQL1)
-
-    # with conn:
-    #     with conn.cursor() as curs:
-    #         curs.execute(SQL2)
-
-    # conn.close()
-
 
 @app.get('/urls')
 def show_urls():
     # получить из БД все сохранённые адреса, отсортировать
     with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            # cur.execute('SELECT * FROM urls ORDER BY id DESC')
             cur.execute(
                 '''SELECT u.id, u.name, uc.status_code, uc.created_at
                 FROM urls AS u
@@ -85,7 +68,6 @@ def show_urls():
                 ORDER BY u.id DESC'''
             )
             all_urls = cur.fetchall()
-    # вывести таблицу на страницу
     return render_template('show.html', all_urls=all_urls)
 
 
@@ -99,8 +81,6 @@ def show_url_id(id):
             url = cur.fetchone()
             cur.execute('SELECT * FROM url_checks WHERE url_id=%s', (id,))
             checks = cur.fetchall()
-            # print('url =', url)
-            # print('url_checks =', checks)
     return render_template('url_id.html',
                            url=url,
                            messages=messages,
@@ -119,12 +99,27 @@ def check_url(id):
                 flash('Произошла ошибка при проверке', 'danger')
                 return redirect(url_for('show_url_id', id=id))
             status = r.status_code
+            content = r.text
+
+            soup = BeautifulSoup(content, 'html.parser')
+
+            h1 = soup.h1
+            tag_h1 = h1.string if h1 else ''
+
+            title = soup.title
+            tag_title = title.string if title else ''
+
+            meta = soup.find('meta',
+                             attrs={'name': 'description', 'content': True})
+            tag_meta_descr = meta.get('content') if meta else ''
 
         with conn.cursor() as cur:
             cur.execute(
-                '''INSERT INTO url_checks (url_id, status_code, created_at)
-                VALUES (%s, %s, %s)''',
-                (id, status, date.today())
+                '''INSERT INTO url_checks (
+                    url_id, status_code, h1, title, description, created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)''',
+                (id, status, tag_h1, tag_title, tag_meta_descr, date.today())
             )
             conn.commit()
     flash('Страница успешно проверена', 'success')
