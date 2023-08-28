@@ -40,6 +40,13 @@ def add_url():
 
     with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
         with conn.cursor() as cur:
+            cur.execute('SELECT id FROM urls WHERE name = %s',
+                        (new_url,))
+            new_url_id = cur.fetchone()[0]
+            if new_url_id:
+                flash('Страница уже существует', 'success')
+                return redirect(url_for('show_url_id', id=new_url_id))
+        with conn.cursor() as cur:
             cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s)',
                         (new_url, date.today())
                         )
