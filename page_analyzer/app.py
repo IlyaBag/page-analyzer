@@ -33,7 +33,11 @@ def add_url():
 
     errors = validate_url(raw_new_url)
     if errors:
-        return render_template('index.html', url=raw_new_url, errors=errors)
+        return render_template(
+            'index.html',
+            url=raw_new_url,
+            errors=errors
+            ), 422
 
     parsed_new_url = urlparse(raw_new_url)
     new_url = f"{parsed_new_url.scheme}://{parsed_new_url.netloc}"
