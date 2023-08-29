@@ -42,10 +42,10 @@ def add_url():
         with conn.cursor() as cur:
             cur.execute('SELECT id FROM urls WHERE name = %s',
                         (new_url,))
-            new_url_id = cur.fetchone()[0]
+            new_url_id = cur.fetchone()
             if new_url_id:
                 flash('Страница уже существует', 'success')
-                return redirect(url_for('show_url_id', id=new_url_id))
+                return redirect(url_for('show_url_id', id=new_url_id[0]))
         with conn.cursor() as cur:
             cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s)',
                         (new_url, date.today())
@@ -111,10 +111,16 @@ def check_url(id):
             soup = BeautifulSoup(content, 'html.parser')
 
             h1 = soup.h1
-            tag_h1 = h1.string if h1 else ''
+            tag_h1 = ''
+            if h1:
+                tag_h1_strings = [elem for elem in h1.strings]
+                tag_h1 = ''.join(tag_h1_strings)
 
             title = soup.title
-            tag_title = title.string if title else ''
+            tag_title = ''
+            if title:
+                tag_title_strings = [elem for elem in title.strings]
+                tag_title = ''.join(tag_title_strings)
 
             meta = soup.find('meta',
                              attrs={'name': 'description', 'content': True})
