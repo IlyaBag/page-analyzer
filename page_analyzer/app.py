@@ -37,7 +37,7 @@ def add_url():
             'index.html',
             url=raw_new_url,
             errors=errors
-            ), 422
+        ), 422
 
     parsed_new_url = urlparse(raw_new_url)
     new_url = f"{parsed_new_url.scheme}://{parsed_new_url.netloc}"
@@ -108,8 +108,13 @@ def check_url(id):
                 r = requests.get(url.name, timeout=5)
             except requests.RequestException:
                 flash('Произошла ошибка при проверке', 'danger')
-                return redirect(url_for('show_url_id', id=id)), 422
+                return redirect(url_for('show_url_id', id=id))
+
             status = r.status_code
+            if status != 200:
+                flash('Произошла ошибка при проверке', 'danger')
+                return redirect(url_for('show_url_id', id=id))
+
             content = r.text
 
             soup = BeautifulSoup(content, 'html.parser')
