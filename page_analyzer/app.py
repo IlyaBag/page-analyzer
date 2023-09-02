@@ -18,6 +18,7 @@ app = Flask(__name__)
 
 load_dotenv()
 app.secret_key = os.getenv('SECRET_KEY')
+DB_URL = os.getenv('DATABASE_URL')
 
 
 @app.route('/')
@@ -42,7 +43,7 @@ def add_url():
     parsed_new_url = urlparse(raw_new_url)
     new_url = f"{parsed_new_url.scheme}://{parsed_new_url.netloc}"
 
-    with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
+    with psycopg2.connect(DB_URL) as conn:
         with conn.cursor() as cur:
             cur.execute('SELECT id FROM urls WHERE name = %s',
                         (new_url,))
@@ -66,7 +67,7 @@ def add_url():
 @app.get('/urls')
 def show_urls():
     # получить из БД все сохранённые адреса, отсортировать
-    with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
+    with psycopg2.connect(DB_URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
                 '''SELECT u.id, u.name, uc.status_code, uc.created_at
@@ -86,7 +87,7 @@ def show_urls():
 def show_url_id(id):
     # получить из БД запись с нужным id
     messages = get_flashed_messages(with_categories=True)
-    with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
+    with psycopg2.connect(DB_URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
             url = cur.fetchone()
@@ -100,7 +101,7 @@ def show_url_id(id):
 
 @app.post('/urls/<id>/checks')
 def check_url(id):
-    with psycopg2.connect(os.getenv('DATABASE_URL')) as conn:
+    with psycopg2.connect(DB_URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute('SELECT * FROM urls WHERE id=%s', (id,))
             url = cur.fetchone()
