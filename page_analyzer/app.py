@@ -1,7 +1,8 @@
 import os
 from urllib.parse import urlparse
 
-import padb
+import page_analyzer.padb as padb
+import page_analyzer.url_check as url_check
 
 from flask import (
     Flask, request, render_template, redirect, url_for,
@@ -10,7 +11,6 @@ from flask import (
 from dotenv import load_dotenv
 import validators
 import requests
-from bs4 import BeautifulSoup
 
 
 app = Flask(__name__)
@@ -89,25 +89,10 @@ def check_url(id):
         return redirect(url_for('show_url_id', id=id))
     # распарсить содержимое полученного ответа
     content = r.text
-    soup = BeautifulSoup(content, 'html.parser')
-
-    h1 = soup.h1
-    tag_h1 = ''
-    if h1:
-        tag_h1_strings = [elem for elem in h1.strings]
-        tag_h1 = ''.join(tag_h1_strings)
-
-    title = soup.title
-    tag_title = ''
-    if title:
-        tag_title_strings = [elem for elem in title.strings]
-        tag_title = ''.join(tag_title_strings)
-
-    meta = soup.find('meta', attrs={'name': 'description', 'content': True})
-    tag_meta_descr = meta.get('content') if meta else ''
+    tags = url_check.url_check(content)
 
     # записать в БД результат проверки
-    padb.save_check_to_db(id, status, tag_h1, tag_title, tag_meta_descr)
+    padb.save_check_to_db(id, status, *tags)
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('show_url_id', id=id))
 
