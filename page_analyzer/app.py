@@ -53,7 +53,7 @@ def add_url():
     new_url_id = padb.get_id_by_url(new_url)
     if new_url_id:
         flash('Страница уже существует', 'success')
-        return redirect(url_for('show_url_id', id=new_url_id[0]))
+        return redirect(url_for('show_url_id', id=new_url_id))
     # записать адрес в базу данных и получить его id
     padb.save_url_to_db(new_url)
     new_url_id = padb.get_id_by_url(new_url)
