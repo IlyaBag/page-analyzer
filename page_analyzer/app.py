@@ -30,6 +30,8 @@ def index():
 def show_urls():
     # получить из БД все сохранённые адреса
     all_urls = padb.get_all_urls()
+    for au in all_urls:
+        print('au =', au)
     return render_template('show.html', all_urls=all_urls)
 
 

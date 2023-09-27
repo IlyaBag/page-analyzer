@@ -14,18 +14,51 @@ DB_URL = os.getenv('DATABASE_URL')
 def get_all_urls():
     with psycopg2.connect(DB_URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
+            # cur.execute(
+            #     '''SELECT u.id, u.name, uc.status_code, uc.created_at
+            #     FROM urls AS u
+            #     LEFT JOIN
+            #         (SELECT DISTINCT ON (url_id) url_id, status_code, created_at
+            #             FROM url_checks
+            #             ORDER BY url_id, created_at DESC) as uc
+            #         ON u.id = uc.url_id
+            #     ORDER BY u.id DESC'''
+            # )
             cur.execute(
-                '''SELECT u.id, u.name, uc.status_code, uc.created_at
-                FROM urls AS u
-                LEFT JOIN
-                    (SELECT DISTINCT ON (url_id) url_id, status_code, created_at
-                        FROM url_checks
-                        ORDER BY url_id, created_at DESC) as uc
-                    ON u.id = uc.url_id
-                ORDER BY u.id DESC'''
+                'SELECT id, name FROM urls ORDER BY id'
             )
             all_urls = cur.fetchall()
-            return all_urls
+            cur.execute(
+                '''
+                SELECT DISTINCT ON (url_id)
+                url_id, status_code, created_at FROM url_checks
+                ORDER BY url_id, created_at DESC
+                '''
+            )
+            all_checks = cur.fetchall()
+            # print(all_checks)
+
+    # Need an algorithm
+    [(1, 'one'), (2, 'two'), (3, 'ten')]
+    [(1, 200, 'field'), (3, 202, 'fiels')]
+    # End need
+
+    # O(n^2) :-(
+    urls = []
+    for url in all_urls:
+        match = False
+        for check in all_checks:
+            if url.id in check:
+                data = (*url, *check)
+                urls.append(data)
+                match = True
+                break
+        if not match:
+            urls.append((*url, ))
+    print('urls =', urls)
+
+    # urls = [(url, check) for url, check in zip(all_urls, all_checks)]
+    return urls
     # cur.close()
     # conn.close()
 
