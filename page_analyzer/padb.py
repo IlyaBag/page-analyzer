@@ -11,54 +11,38 @@ load_dotenv()
 DB_URL = os.getenv('DATABASE_URL')
 
 
-def get_all_urls():
+def _get_all_urls_and_checks():
     with psycopg2.connect(DB_URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            # cur.execute(
-            #     '''SELECT u.id, u.name, uc.status_code, uc.created_at
-            #     FROM urls AS u
-            #     LEFT JOIN
-            #         (SELECT DISTINCT ON (url_id) url_id, status_code, created_at
-            #             FROM url_checks
-            #             ORDER BY url_id, created_at DESC) as uc
-            #         ON u.id = uc.url_id
-            #     ORDER BY u.id DESC'''
-            # )
-            cur.execute(
-                'SELECT id, name FROM urls ORDER BY id'
-            )
+            cur.execute('SELECT id, name FROM urls ORDER BY id')
             all_urls = cur.fetchall()
+
             cur.execute(
                 '''
                 SELECT DISTINCT ON (url_id)
-                url_id, status_code, created_at FROM url_checks
+                url_id, created_at, status_code FROM url_checks
                 ORDER BY url_id, created_at DESC
                 '''
             )
             all_checks = cur.fetchall()
-            # print(all_checks)
+    return all_urls, all_checks
 
-    # Need an algorithm
-    [(1, 'one'), (2, 'two'), (3, 'ten')]
-    [(1, 200, 'field'), (3, 202, 'fiels')]
-    # End need
 
-    # O(n^2) :-(
-    urls = []
+def get_urls_list():
+    # all_urls_example = [(1, 'one'), (2, 'two'), (4, 'ten')]
+    # all_checks_example = [(1, 'date1', 200), (4, 'date2', 302)]
+    all_urls, all_checks = _get_all_urls_and_checks()
+    urls_list = []
+    all_checks_position = 0
     for url in all_urls:
-        match = False
-        for check in all_checks:
-            if url.id in check:
-                data = (*url, *check)
-                urls.append(data)
-                match = True
-                break
-        if not match:
-            urls.append((*url, ))
-    print('urls =', urls)
+        check = ('', '')
+        current_check = all_checks[all_checks_position]
+        if url.id == current_check.url_id:
+            check = current_check[1:]  # first 'url_id' field is redundant
+            all_checks_position += 1
+        urls_list.append((*url, *check))
+    return urls_list
 
-    # urls = [(url, check) for url, check in zip(all_urls, all_checks)]
-    return urls
     # cur.close()
     # conn.close()
 

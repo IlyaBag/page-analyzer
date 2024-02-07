@@ -34,13 +34,13 @@
             </tr>
           </thead>
           <tbody>
-            {% for url in all_urls %}
+            {% for url in urls %}
             <tr>
               <td>{{ url[0] }}</td>
               <td>
                 <a href="{{ url_for('show_url_id', id=url[0]) }}">{{ url[1] }}</a>
               </td>
-              <td>{{ url[4] }}</td>
+              <td>{{ url[2] }}</td>
               <td>{{ url[3] }}</td>
             </tr>
             {% endfor %}

@@ -29,10 +29,8 @@ def index():
 @app.get('/urls')
 def show_urls():
     # получить из БД все сохранённые адреса
-    all_urls = padb.get_all_urls()
-    for au in all_urls:
-        print('au =', au)
-    return render_template('show.html', all_urls=all_urls)
+    urls = padb.get_urls_list()
+    return render_template('show.html', urls=urls)
 
 
 @app.post('/urls')
