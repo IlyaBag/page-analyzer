@@ -36,10 +36,11 @@ def get_urls_list():
     all_checks_position = 0
     for url in all_urls:
         check = ('', '')
-        current_check = all_checks[all_checks_position]
-        if url.id == current_check.url_id:
-            check = current_check[1:]  # first 'url_id' field is redundant
-            all_checks_position += 1
+        if all_checks_position < len(all_checks):
+            current_check = all_checks[all_checks_position]
+            if url.id == current_check.url_id:
+                check = current_check[1:]  # first 'url_id' field is redundant
+                all_checks_position += 1
         urls_list.append((*url, *check))
     return urls_list
 
